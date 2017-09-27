@@ -1,0 +1,240 @@
+﻿@{
+    ViewBag.Title = "Index";
+}
+<div>
+    <h4 style="text-align:center;margin-top:30px"><strong>Student Portal</strong></h4>
+</div>
+<style>
+    tr:nth-of-type(odd) {
+        background-color: lightgrey;
+    }
+
+   
+
+   
+</style>
+
+<hr />
+ 
+ @{ Html.RenderPartial("Create");}
+
+
+<!--Add Jquery Datatable reference files-->
+<link rel="stylesheet" href="//cdn.datatables.net/1.10.9/css/jquery.dataTables.min.css" />
+
+<div style="width:90%;">
+    <table id="Jdatatable" class="table table-responsive table-bordered">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Stream</th>
+                <th>Permanent Address</th>
+                <th>Fathers Name</th>
+                <th>Action</th>
+
+            </tr>
+        </thead>
+    </table>
+</div>
+
+@section scripts{
+
+    <script src="~/Scripts/jquery-1.10.2.js"></script>
+    <script src="//cdn.datatables.net/1.10.9/js/jquery.dataTables.min.js"></script>
+    <script type="text/javascript">
+    $(document).ready(function () {
+
+        $("#Jdatatable").DataTable({
+            "ajax": {
+                "url": "/Table/GetData",
+                "type": "GET",
+                "datatype":"json"
+            },
+            "columns": [
+                        { "data": "Id", "autoWidth": true },
+                        { "data": "Name", "autoWidth": true },
+                        { "data": "Email", "autoWidth": true },
+                        { "data": "Phone", "autoWidth": true },
+                        { "data": "Stream", "autoWidth": true },
+                        { "data": "PermanentAddress", "autoWidth": true },
+                        { "data": "FathersName", "autoWidth": true },
+
+                            {
+                                data: "Action",
+                                width: "20%",
+                                "render": function (data, type, full, meta) { //this column is redefinied to show the action buttons
+                                    return '<div class="btn-toolbar"><button class="btn btn-sm btn-primary EditButton" data-name="' + data + '">Edit</button><button class="btn btn-sm btn-primary DeleteButton" data-name="' + data + '">Delete</button></div>';
+                                }
+
+
+                            }
+
+
+                        ]
+        });
+    });
+        /*************************************************************************/
+
+
+  
+
+        $.ajax({
+            type: "POST",
+            url: "http://localhost:54192/api/Home",
+            data: JSON.stringify(pupilData),
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            processData: true,
+            success: function (data, status, jqXHR) {
+                alert("success..." + data);
+            },
+            error: function (xhr) {
+                alert(xhr.responseText);
+            }
+        });
+    
+     
+
+
+
+
+        /*****************************************************************/
+
+
+
+    //hook up event for edit record buttons
+    $(document).on('click', '.EditButton', function (event) //any element with the class EditButton will be handled here
+    {
+        event.preventDefault(); //Stops the current handled event to reroute through this ebent
+        var node = $(this); //current element handled
+        var id = node.attr("data-name"); //get the id stored on the data-name property of the button
+
+        ClearForm();
+        //load from database
+        $.ajax({
+            method: "POST",
+            url: "http://localhost:54192/api/Home",
+            dataType: "json",
+            async: true,
+            data: {
+                Id: id
+            },
+            success: function (result) {
+                switch (result.code) {
+                    case "OK":
+                        $("#Id").val(result.data.Id);
+                        $("#Name").val(result.data.Name);
+                        $("#Email").val(result.data.Email);
+                        $("#Phone").val(result.data.Phone);
+                        $("#Stream").val(result.data.Stream);
+                        $("#PermanentAddress").val(result.data.PermanentAddress);
+                        $("#FathersName").val(result.data.FathersName);
+                        $('#addEditCustomer').modal('show');
+                        break;
+                    case "NotFound":
+                        $('#ViewModel').DataTable().ajax.reload();
+                        alert("Record not found.");
+                        break;
+                    case "Error":
+                        alert("Handler Error" + result.data);
+                        break;
+                    default:
+                        alert("Unknown server issue" + result.code);
+                }
+            },
+            error: function (xhr, ajaxOptions, thrownError) {
+                alert("Load User AJAX Error:" + thrownError);
+            }
+        });
+    });
+
+    function ClearForm() //blank the add/edit popup form
+    {
+        $("#Id").val('');
+        $("#Name").val('');
+        $("#Email").val('');
+        $("#Phone").val('');
+        $("#Stream").val('');
+        $("#PermanentAddress").val('');
+        $("#FathersName").val('');
+       
+    }
+
+
+
+        /**********************************************************/
+    $(document).on('click', '.DeleteButton', function (event) {
+        event.preventDefault();
+        if (confirm('This action will delete the selected record. Plese click OK to confirm.')) {
+            var node = $(this);
+            var id = node.attr("data-name");
+
+            //load from database
+            $.ajax({
+                method: "POST",
+                url: "http://localhost:54192/api/Home",
+                dataType: "json",
+                async: true,
+                data: {
+                    Id: id
+                },
+                success: function (result) {
+                    switch (result.code) {
+                        case "OK":
+                            $('#ViewModel').DataTable().ajax.reload();
+                            alert("Record deleted successfully.");
+                            break;
+                        case "Not valid":
+                            alert("Invalid server information.");
+                            break;
+                        case "NotFound":
+                            $('#ViewModel').DataTable().ajax.reload();
+                            alert("Record not found.");
+                            break;
+                        case "Error":
+                            alert("Handler Error" + result.data);
+                            break;
+                        default:
+                            alert("Unknown server issue" + result.code);
+                    }
+                },
+                error: function (xhr, ajaxOptions, thrownError) {
+                    alert("Load User AJAX Error:" + thrownError);
+                }
+            });
+        }
+    });
+    </script>
+}
+@*
+    @section scripts{
+    <script src="~/Scripts/jquery-1.10.2.js"></script>
+    <script src="//cdn.datatables.net/1.10.9/js/jquery.dataTables.min.js"></script>
+    <script type="text/javascript">
+        $("#data-table").DataTable({
+            serverSide: true,
+            processing: true,
+            columns : [
+                { data : 'Id' },
+                { data: 'Name' },
+                { data: 'Email' },
+                { data: 'phone' },
+                { data: 'Stream' },
+                { data: 'PermanentAddress' },
+                { data: 'FathersName' },
+                {data:'Action'}
+            ],
+            ajax: {
+                url: "http://localhost:54192/api/Home",
+                dataSrc: ''
+
+            }
+
+        });
+
+        </script>
+    }
+*@
